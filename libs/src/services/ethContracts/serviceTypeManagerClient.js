@@ -38,6 +38,11 @@ class ServiceTypeManagerClient extends GovernedContractClient {
     const method = await this.getMethod('getNumberOfVersions', Utils.utf8ToHex(serviceType))
     return method.call()
   }
+
+  async getServiceTypeInfo (serviceType) {
+    const method = await this.getMethod('getServiceTypeInfo', Utils.utf8ToHex(serviceType))
+    return method.call()
+  }
 }
 
 module.exports = ServiceTypeManagerClient

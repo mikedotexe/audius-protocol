@@ -25,7 +25,7 @@ class ServiceProviderFactoryClient extends GovernedContractClient {
     this.isDebug = isDebug
   }
 
-  async registerWithDelegate (serviceType, endpoint, amount, delegateOwnerWallet) {
+  async registerWithDelegate (serviceType, endpoint, amount, delegateOwnerWallet, privateKey = null) {
     if (!this.isDebug && !Utils.isFQDN(endpoint)) {
       throw new Error('Not a fully qualified domain name!')
     }
@@ -33,29 +33,34 @@ class ServiceProviderFactoryClient extends GovernedContractClient {
       throw new Error('Invalid amount')
     }
 
-    let requestUrl = urlJoin(endpoint, 'health_check')
-    let axiosRequestObj = {
-      url: requestUrl,
-      method: 'get',
-      timeout: 1000
-    }
-    const resp = await axios(axiosRequestObj)
-    let endpointServiceType
-    try {
-      endpointServiceType = resp.data.data.service
-    } catch (e) {
-      endpointServiceType = resp.data.service
-    }
+    // let requestUrl = urlJoin(endpoint, 'health_check')
+    // let axiosRequestObj = {
+    //   url: requestUrl,
+    //   method: 'get',
+    //   timeout: 1000
+    // }
+    // const resp = await axios(axiosRequestObj)
+    // let endpointServiceType
+    // try {
+    //   endpointServiceType = resp.data.data.service
+    // } catch (e) {
+    //   endpointServiceType = resp.data.service
+    // }
 
-    if (serviceType !== endpointServiceType) {
-      throw new Error('Attempting to register endpoint with mismatched service type')
-    }
-
+    // if (serviceType !== endpointServiceType) {
+    //   throw new Error('Attempting to register endpoint with mismatched service type')
+    // }
     // Approve token transfer operation
+    console.log("about to get contract address")
     const contractAddress = await this.stakingProxyClient.getAddress()
+    console.log("contractAddress", contractAddress)
+    console.log("about to approve token transfer")
     let tx0 = await this.audiusTokenClient.approve(
-      contractAddress,
-      amount)
+      '0x63C66b77B9972428d1F6272cD8953a454880041D', // staking address
+      amount,
+      privateKey
+    )
+    console.log("tx0 done", tx0)
 
     // Register and stake
     let method = await this.getMethod('register',
@@ -63,23 +68,31 @@ class ServiceProviderFactoryClient extends GovernedContractClient {
       endpoint,
       amount,
       delegateOwnerWallet)
-    let tx = await this.web3Manager.sendTransaction(method, 1000000)
+    let tx = await this.web3Manager.sendTransaction(
+      method,
+      Utils.toBN('387000000000'),
+      '0x3253340c170366f42240238bc032bB86586Dba67', //SPFactory address
+      privateKey
+    )
+    console.log("register done", tx)
     return {
       txReceipt: tx,
       spID: parseInt(tx.events.RegisteredServiceProvider.returnValues._spID),
       serviceType: Utils.hexToUtf8(tx.events.RegisteredServiceProvider.returnValues._serviceType),
       owner: tx.events.RegisteredServiceProvider.returnValues._owner,
-      endpoint: tx.events.RegisteredServiceProvider.returnValues._endpoint,
-      tokenApproveReceipt: tx0
+      endpoint: tx.events.RegisteredServiceProvider.returnValues._endpoint
+      // tokenApproveReceipt: tx0
     }
   }
 
-  async register (serviceType, endpoint, amount) {
+  async register (serviceType, endpoint, amount, privateKey = null) {
     return this.registerWithDelegate(
       serviceType,
       endpoint,
       amount,
-      this.web3Manager.getWalletAddress())
+      this.web3Manager.getWalletAddress(),
+      privateKey
+    )
   }
 
   async increaseStake (amount) {
@@ -184,6 +197,18 @@ class ServiceProviderFactoryClient extends GovernedContractClient {
   // `getServiceEndpointInfo` directly
   async getServiceProviderInfo (serviceType, serviceId) {
     return this.getServiceEndpointInfo(serviceType, serviceId)
+  }
+
+  async getStakingAddress () {
+    return (await this.getMethod('getStakingAddress')).call()
+  }
+
+  async getServiceTypeManagerAddress () {
+    return (await this.getMethod('getServiceTypeManagerAddress')).call()
+  }
+
+  async getClaimsManagerAddress () {
+    return (await this.getMethod('getClaimsManagerAddress')).call()
   }
 
   async getServiceEndpointInfo (serviceType, serviceId) {

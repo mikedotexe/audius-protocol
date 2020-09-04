@@ -3,7 +3,7 @@ const EthereumTx = require('ethereumjs-tx')
 const DEFAULT_GAS_AMOUNT = 200000
 const MIN_GAS_PRICE = Math.pow(10, 9) // 1 GWei, POA default gas price
 const HIGH_GAS_PRICE = 5 * MIN_GAS_PRICE // 5 GWei
-const GANACHE_GAS_PRICE = 39062500000 // ganache gas price is extremely high, so we hardcode a lower value (0x09184e72a0 from docs here)
+const GANACHE_GAS_PRICE = 60062500000 // ganache gas price is extremely high, so we hardcode a lower value (0x09184e72a0 from docs here)
 
 /** Singleton state-manager for Audius Eth Contracts */
 class EthWeb3Manager {
@@ -34,11 +34,13 @@ class EthWeb3Manager {
         // If the gas is zero, the txn will likely never get mined.
         gasPrice = MIN_GAS_PRICE
       }
-      gasPrice = '0x' + gasPrice.toString(16)
+      console.log('gasPrice', gasPrice)
+      gasPrice = '0x' + (gasPrice*1.6).toString(16)
 
       let privateKeyBuffer = Buffer.from(privateKey, 'hex')
       let walletAddress = this.getWalletAddress()
       const txCount = await this.web3.eth.getTransactionCount(walletAddress)
+      console.log('txCount', txCount)
       const encodedABI = contractMethod.encodeABI()
       const txParams = {
         nonce: this.web3.utils.toHex(txCount),
@@ -51,11 +53,13 @@ class EthWeb3Manager {
       const tx = new EthereumTx(txParams)
       tx.sign(privateKeyBuffer)
       const signedTx = '0x' + tx.serialize().toString('hex')
+      console.log('wallet', walletAddress, 'signedTx', signedTx)
       return this.web3.eth.sendSignedTransaction(signedTx)
     }
 
     let gasPrice = parseInt(await this.web3.eth.getGasPrice())
-    return contractMethod.send({ from: this.ownerWallet, gas: gasAmount, gasPrice: gasPrice })
+    console.log(this.ownerWallet, signedTx)
+    return contractMethod.send({ from: this.ownerWallet, gas: gasAmount, gasPrice: gasPrice*1.5 })
   }
 }
 
