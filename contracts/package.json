@@ -33,7 +33,8 @@
     "ethlint": "^1.2.3",
     "fs-extra": "^7.0.0",
     "openzeppelin-solidity": "^2.1.0",
-    "truffle": "5.0.42"
+    "truffle": "5.0.42",
+    "near-web3-provider": "https://github.com/near/near-web3-provider"
   },
   "devDependencies": {
     "async": "^2.6.1",
@@ -41,10 +42,6 @@
     "chance": "^1.0.18",
     "standard": "^12.0.1",
     "ipfs-api": "^24.0.1"
-  },
-  "engines": {
-    "node": "10.4.1",
-    "npm": "6.1.0"
   },
   "standard": {
     "globals": [
